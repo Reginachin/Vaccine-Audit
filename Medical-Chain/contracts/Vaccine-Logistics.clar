@@ -20,6 +20,7 @@
 (define-constant ERR-DATA-VALIDATION-FAILED (err u113))
 (define-constant ERR-EXPIRY-DATE-INVALID (err u114))
 (define-constant ERR-STORAGE-CAPACITY-INVALID (err u115))
+(define-constant ERR-INVALID-PRINCIPAL (err u116))
 
 ;; System Constants
 (define-constant min-storage-temp (- 70))
@@ -120,6 +121,11 @@
     (> capacity u0)
 )
 
+;; Principal Validation
+(define-private (is-valid-principal (user-principal principal))
+    (not (is-eq user-principal tx-sender))
+)
+
 ;; Read-only Functions - Contract Information
 (define-read-only (get-contract-admin)
     (ok (var-get contract-administrator))
@@ -159,6 +165,7 @@
 (define-public (transfer-admin-rights (new-admin principal))
     (begin
         (asserts! (is-contract-admin) ERR-ADMIN-FUNCTION-ONLY)
+        (asserts! (is-valid-principal new-admin) ERR-INVALID-PRINCIPAL)
         (ok (var-set contract-administrator new-admin))
     )
 )
@@ -173,6 +180,7 @@
         (asserts! (validate-text-20 role) ERR-DATA-VALIDATION-FAILED)
         (asserts! (validate-text-100 facility) ERR-DATA-VALIDATION-FAILED)
         (asserts! (is-future-date credential-expiry) ERR-EXPIRY-DATE-INVALID)
+        (asserts! (is-valid-principal provider-address) ERR-INVALID-PRINCIPAL)
         (ok (map-set authorized-providers 
             provider-address 
             {
